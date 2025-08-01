@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, Phone, MapPin, Clock, DollarSign, Shield, Camera, Check } from 'lucide-react';
-import { ServiceType, AvailabilityStatus } from '../types';
+import { ArrowLeft, User, MapPin, Shield, Check } from 'lucide-react';
+import { ServiceType } from '../types';
+import { createProvider } from '../services/providerServices';
 
 interface ServiceProviderProps {
   onBack: () => void;
@@ -44,12 +45,22 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     description: '',
     experience: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    console.log(formData);
     e.preventDefault();
-    // Here you would typically submit to your backend
-    console.log('Provider registration:', formData);
-    setStep('success');
+    setLoading(true);
+    setError(null);
+    try {
+      await createProvider(formData);
+      setStep('success');
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateFormData = (field: keyof ProviderForm, value: any) => {
@@ -269,11 +280,17 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
             </div>
 
             {/* Submit Button */}
+            {error && (
+              <div className="text-red-600 bg-red-50 rounded-xl p-4 text-center">
+                {error}
+              </div>
+            )}
             <button
               type="submit"
               className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300"
+              disabled={loading}
             >
-              Create Provider Profile
+              {loading ? 'Creating...' : 'Create Provider Profile'}
             </button>
           </form>
         </div>

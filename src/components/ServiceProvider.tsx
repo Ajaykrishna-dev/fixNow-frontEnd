@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, MapPin, Shield, Check } from 'lucide-react';
 import { ServiceType } from '../types';
 import { createProvider } from '../services/providerServices';
@@ -31,6 +31,24 @@ interface ProviderForm {
   experience: string;
 }
 
+interface FormErrors {
+  fullName?: string;
+  phoneNumber?: string;
+  serviceType?: string;
+  address?: string;
+  availableHours?: string;
+  hourlyRate?: string;
+}
+
+interface TouchedFields {
+  fullName: boolean;
+  phoneNumber: boolean;
+  serviceType: boolean;
+  address: boolean;
+  availableHours: boolean;
+  hourlyRate: boolean;
+}
+
 export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [formData, setFormData] = useState<ProviderForm>({
@@ -45,12 +63,97 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     description: '',
     experience: '',
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<TouchedFields>({
+    fullName: false,
+    phoneNumber: false,
+    serviceType: false,
+    address: false,
+    availableHours: false,
+    hourlyRate: false,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  // Validation functions
+  const validateForm = () => {
+    const newErrors: FormErrors = {};
+
+    if (touched.fullName && !formData.fullName.trim()) {
+      newErrors.fullName = 'Full name is required';
+    } else if (touched.fullName && formData.fullName.length < 2) {
+      newErrors.fullName = 'Full name must be at least 2 characters';
+    } else if (touched.fullName && !/^[a-zA-Z\s]+$/.test(formData.fullName)) {
+      newErrors.fullName = 'Full name should only contain letters and spaces';
+    }
+
+    if (touched.phoneNumber && !formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (touched.phoneNumber && !/^\+?[\d\s()-]{10,14}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Enter a valid phone number (e.g., +1234567890 or (123) 456-7890)';
+    }
+
+    if (touched.serviceType && !formData.serviceType) {
+      newErrors.serviceType = 'Please select a service type';
+    }
+
+    if (touched.address && !formData.address.trim()) {
+      newErrors.address = 'Address is required';
+    } else if (touched.address && formData.address.length < 5) {
+      newErrors.address = 'Address must be at least 5 characters';
+    }
+
+    if (touched.availableHours && !formData.availableHours.trim()) {
+      newErrors.availableHours = 'Available hours are required';
+    } else if (
+      touched.availableHours &&
+      !/^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i.test(formData.availableHours)
+    ) {
+      newErrors.availableHours = 'Enter valid hours (e.g., 8:00 AM - 6:00 PM)';
+    }
+
+    if (touched.hourlyRate && formData.hourlyRate <= 0) {
+      newErrors.hourlyRate = 'Hourly rate must be greater than 0';
+    } else if (touched.hourlyRate && formData.hourlyRate > 1000) {
+      newErrors.hourlyRate = 'Hourly rate cannot exceed 1000';
+    }
+
+    setErrors(newErrors);
+
+    // Check if all required fields are filled and valid
+    const isValid =
+      formData.fullName.trim().length >= 2 &&
+      /^[a-zA-Z\s]+$/.test(formData.fullName) &&
+      /^\+?[\d\s()-]{10,14}$/.test(formData.phoneNumber) &&
+      formData.serviceType !== '' &&
+      formData.address.trim().length >= 5 &&
+      /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i.test(formData.availableHours) &&
+      formData.hourlyRate > 0 &&
+      formData.hourlyRate <= 1000;
+
+    return isValid;
+  };
+
+  // Update form validity whenever formData or touched fields change
+  useEffect(() => {
+    setIsFormValid(validateForm());
+  }, [formData, touched]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log(formData);
     e.preventDefault();
+    // Mark all fields as touched on submit to show all errors
+    setTouched({
+      fullName: true,
+      phoneNumber: true,
+      serviceType: true,
+      address: true,
+      availableHours: true,
+      hourlyRate: true,
+    });
+
+    if (!validateForm()) return;
+
     setLoading(true);
     setError(null);
     try {
@@ -65,6 +168,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
 
   const updateFormData = (field: keyof ProviderForm, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setTouched(prev => ({ ...prev, [field]: true }));
   };
 
   if (step === 'success') {
@@ -82,6 +186,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
             <button
               onClick={onBack}
               className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-300"
+              disabled={loading}
             >
               Back to Home
             </button>
@@ -98,6 +203,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
           <button
             onClick={onBack}
             className="flex items-center text-emerald-600 hover:text-emerald-700 transition-colors"
+            disabled={loading}
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
             Back to Home
@@ -128,9 +234,15 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                     required
                     value={formData.fullName}
                     onChange={(e) => updateFormData('fullName', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                      errors.fullName && touched.fullName ? 'border-red-500' : ''
+                    }`}
                     placeholder="Enter your full name"
+                    disabled={loading}
                   />
+                  {errors.fullName && touched.fullName && (
+                    <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
@@ -139,9 +251,15 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                     required
                     value={formData.phoneNumber}
                     onChange={(e) => updateFormData('phoneNumber', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                      errors.phoneNumber && touched.phoneNumber ? 'border-red-500' : ''
+                    }`}
                     placeholder="+1 (555) 123-4567"
+                    disabled={loading}
                   />
+                  {errors.phoneNumber && touched.phoneNumber && (
+                    <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -165,13 +283,17 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                         formData.serviceType === service.value
                           ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }`}
+                      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={loading}
                     >
                       <div className="text-lg mb-1">{service.icon}</div>
                       <div className="text-sm font-medium">{service.label}</div>
                     </button>
                   ))}
                 </div>
+                {errors.serviceType && touched.serviceType && (
+                  <p className="text-red-500 text-sm mt-1">{errors.serviceType}</p>
+                )}
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
@@ -183,6 +305,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                     onChange={(e) => updateFormData('businessName', e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
                     placeholder="Optional business name"
+                    disabled={loading}
                   />
                 </div>
                 <div>
@@ -193,9 +316,15 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                     min="0"
                     value={formData.hourlyRate || ''}
                     onChange={(e) => updateFormData('hourlyRate', parseInt(e.target.value) || 0)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                      errors.hourlyRate && touched.hourlyRate ? 'border-red-500' : ''
+                    }`}
                     placeholder="75"
+                    disabled={loading}
                   />
+                  {errors.hourlyRate && touched.hourlyRate && (
+                    <p className="text-red-500 text-sm mt-1">{errors.hourlyRate}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -214,9 +343,15 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                   required
                   value={formData.address}
                   onChange={(e) => updateFormData('address', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                  className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                    errors.address && touched.address ? 'border-red-500' : ''
+                  }`}
                   placeholder="123 Main St, City, State"
+                  disabled={loading}
                 />
+                {errors.address && touched.address && (
+                  <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+                )}
               </div>
 
               <div className="mb-4">
@@ -226,9 +361,15 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                   required
                   value={formData.availableHours}
                   onChange={(e) => updateFormData('availableHours', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                  className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                    errors.availableHours && touched.availableHours ? 'border-red-500' : ''
+                  }`}
                   placeholder="8:00 AM - 6:00 PM"
+                  disabled={loading}
                 />
+                {errors.availableHours && touched.availableHours && (
+                  <p className="text-red-500 text-sm mt-1">{errors.availableHours}</p>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-4 bg-orange-50 rounded-xl">
@@ -241,7 +382,8 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                   onClick={() => updateFormData('emergencySupport', !formData.emergencySupport)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     formData.emergencySupport ? 'bg-orange-600' : 'bg-gray-200'
-                  }`}
+                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={loading}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -264,6 +406,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                   rows={3}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
                   placeholder="Brief description of your services and specialties"
+                  disabled={loading}
                 />
               </div>
 
@@ -275,6 +418,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                   onChange={(e) => updateFormData('experience', e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
                   placeholder="5+ years"
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -287,8 +431,10 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
             )}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300"
-              disabled={loading}
+              className={`w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-200 ${
+                (!isFormValid || loading) ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              disabled={!isFormValid || loading}
             >
               {loading ? 'Creating...' : 'Create Provider Profile'}
             </button>

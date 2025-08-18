@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, MapPin, Shield, Check } from 'lucide-react';
-import { ServiceType } from '../types';
-import { createProvider } from '../services/providerServices';
+import { ServiceType } from '../../types';
+import { createProvider } from '../../services/providerServices';
 
 interface ServiceProviderProps {
   onBack: () => void;

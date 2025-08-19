@@ -21,6 +21,8 @@ const serviceTypes: { value: ServiceType; label: string; icon: string }[] = [
 interface ProviderForm {
   fullName: string;
   phoneNumber: string;
+  email: string;
+  password: string;
   serviceType: ServiceType | '';
   businessName: string;
   address: string;
@@ -34,6 +36,8 @@ interface ProviderForm {
 interface FormErrors {
   fullName?: string;
   phoneNumber?: string;
+  email?: string;
+  password?: string;
   serviceType?: string;
   address?: string;
   availableHours?: string;
@@ -43,6 +47,8 @@ interface FormErrors {
 interface TouchedFields {
   fullName: boolean;
   phoneNumber: boolean;
+  email: boolean;
+  password: boolean;
   serviceType: boolean;
   address: boolean;
   availableHours: boolean;
@@ -54,6 +60,8 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
   const [formData, setFormData] = useState<ProviderForm>({
     fullName: '',
     phoneNumber: '',
+    email: '',
+    password: '',
     serviceType: '',
     businessName: '',
     address: '',
@@ -67,6 +75,8 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
   const [touched, setTouched] = useState<TouchedFields>({
     fullName: false,
     phoneNumber: false,
+    email: false,
+    password: false,
     serviceType: false,
     address: false,
     availableHours: false,
@@ -92,6 +102,18 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
       newErrors.phoneNumber = 'Phone number is required';
     } else if (touched.phoneNumber && !/^\+?[\d\s()-]{10,14}$/.test(formData.phoneNumber)) {
       newErrors.phoneNumber = 'Enter a valid phone number (e.g., +1234567890 or (123) 456-7890)';
+    }
+
+    if (touched.email && !formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (touched.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    if (touched.password && !formData.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (touched.password && formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
     }
 
     if (touched.serviceType && !formData.serviceType) {
@@ -126,6 +148,8 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
       formData.fullName.trim().length >= 2 &&
       /^[a-zA-Z\s]+$/.test(formData.fullName) &&
       /^\+?[\d\s()-]{10,14}$/.test(formData.phoneNumber) &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
+      formData.password.trim().length >= 8 &&
       formData.serviceType !== '' &&
       formData.address.trim().length >= 5 &&
       /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i.test(formData.availableHours) &&
@@ -146,6 +170,8 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     setTouched({
       fullName: true,
       phoneNumber: true,
+      email: true,
+      password: true,
       serviceType: true,
       address: true,
       availableHours: true,
@@ -259,6 +285,40 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                   />
                   {errors.phoneNumber && touched.phoneNumber && (
                     <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => updateFormData('email', e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                      errors.email && touched.email ? 'border-red-500' : ''
+                    }`}
+                    placeholder="example@email.com"
+                    disabled={loading}
+                  />
+                  {errors.email && touched.email && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">New Password *</label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={(e) => updateFormData('password', e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                      errors.password && touched.password ? 'border-red-500' : ''
+                    }`}
+                    placeholder="Enter a secure password"
+                    disabled={loading}
+                  />
+                  {errors.password && touched.password && (
+                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
                   )}
                 </div>
               </div>

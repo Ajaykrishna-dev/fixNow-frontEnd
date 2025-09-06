@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, MapPin, Shield, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, MapPin, Shield, Check } from 'lucide-react';
 import { ServiceType } from '../../types';
 import { createProvider } from '../../services/providerServices';
 
@@ -55,7 +55,14 @@ interface TouchedFields {
   hourlyRate: boolean;
 }
 
+const STEPS = [
+  { id: 1, title: 'Personal Information', icon: User },
+  { id: 2, title: 'Service Information', icon: Shield },
+  { id: 3, title: 'Location & Availability', icon: MapPin },
+];
+
 export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
+  const [currentStep, setCurrentStep] = useState(1);
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [formData, setFormData] = useState<ProviderForm>({
     fullName: '',
@@ -86,7 +93,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [isFormValid, setIsFormValid] = useState(false);
 
-  // Validation functions
+  // Validation functions - keeping your original logic
   const validateForm = () => {
     const newErrors: FormErrors = {};
 
@@ -159,11 +166,12 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     return isValid;
   };
 
-  // Update form validity whenever formData or touched fields change
+  // Update form validity whenever formData or touched fields change - keeping your original logic
   useEffect(() => {
     setIsFormValid(validateForm());
   }, [formData, touched]);
 
+  // Your original handleSubmit function
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Mark all fields as touched on submit to show all errors
@@ -192,9 +200,72 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     }
   };
 
+  // Your original updateFormData function
   const updateFormData = (field: keyof ProviderForm, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  // New functions for step navigation
+  const validateStep = (step: number) => {
+    if (step === 1) {
+      return formData.fullName.trim().length >= 2 &&
+             /^[a-zA-Z\s]+$/.test(formData.fullName) &&
+             /^\+?[\d\s()-]{10,14}$/.test(formData.phoneNumber) &&
+             /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
+             formData.password.trim().length >= 8;
+    }
+    if (step === 2) {
+      return formData.serviceType !== '' &&
+             formData.hourlyRate > 0 &&
+             formData.hourlyRate <= 1000;
+    }
+    if (step === 3) {
+      return formData.address.trim().length >= 5 &&
+             /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i.test(formData.availableHours);
+    }
+    return false;
+  };
+
+  const handleNext = () => {
+    // Mark current step fields as touched
+    if (currentStep === 1) {
+      setTouched(prev => ({
+        ...prev,
+        fullName: true,
+        phoneNumber: true,
+        email: true,
+        password: true,
+      }));
+    } else if (currentStep === 2) {
+      setTouched(prev => ({
+        ...prev,
+        serviceType: true,
+        hourlyRate: true,
+      }));
+    } else if (currentStep === 3) {
+      setTouched(prev => ({
+        ...prev,
+        address: true,
+        availableHours: true,
+      }));
+    }
+
+    if (validateStep(currentStep)) {
+      if (currentStep < 3) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        // Create a fake form event for handleSubmit
+        const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+        handleSubmit(fakeEvent);
+      }
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   if (step === 'success') {
@@ -222,181 +293,201 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center mb-8">
-          <button
-            onClick={onBack}
-            className="flex items-center text-emerald-600 hover:text-emerald-700 transition-colors"
-            disabled={loading}
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to Home
-          </button>
-        </div>
-
-        <div className="bg-white rounded-3xl p-8 shadow-xl">
-          <div className="text-center mb-8">
-            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="h-8 w-8 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Join as a Service Provider</h2>
-            <p className="text-gray-600">Create your profile and start connecting with customers</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Information */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <User className="h-5 w-5 mr-2 text-emerald-600" />
-                Personal Information
-              </h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.fullName}
-                    onChange={(e) => updateFormData('fullName', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
-                      errors.fullName && touched.fullName ? 'border-red-500' : ''
-                    }`}
-                    placeholder="Enter your full name"
-                    disabled={loading}
-                  />
-                  {errors.fullName && touched.fullName && (
-                    <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={formData.phoneNumber}
-                    onChange={(e) => updateFormData('phoneNumber', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
-                      errors.phoneNumber && touched.phoneNumber ? 'border-red-500' : ''
-                    }`}
-                    placeholder="+1 (555) 123-4567"
-                    disabled={loading}
-                  />
-                  {errors.phoneNumber && touched.phoneNumber && (
-                    <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => updateFormData('email', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
-                      errors.email && touched.email ? 'border-red-500' : ''
-                    }`}
-                    placeholder="example@email.com"
-                    disabled={loading}
-                  />
-                  {errors.email && touched.email && (
-                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">New Password *</label>
-                  <input
-                    type="password"
-                    required
-                    value={formData.password}
-                    onChange={(e) => updateFormData('password', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
-                      errors.password && touched.password ? 'border-red-500' : ''
-                    }`}
-                    placeholder="Enter a secure password"
-                    disabled={loading}
-                  />
-                  {errors.password && touched.password && (
-                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-                  )}
-                </div>
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <User className="h-8 w-8 text-white" />
               </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Personal Information</h2>
+              <p className="text-gray-600">Let's start with your basic details</p>
             </div>
 
-            {/* Service Information */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Shield className="h-5 w-5 mr-2 text-emerald-600" />
-                Service Information
-              </h3>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Service Type *</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {serviceTypes.map((service) => (
-                    <button
-                      key={service.value}
-                      type="button"
-                      onClick={() => updateFormData('serviceType', service.value)}
-                      className={`p-3 rounded-xl border-2 transition-all duration-200 text-left ${
-                        formData.serviceType === service.value
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      disabled={loading}
-                    >
-                      <div className="text-lg mb-1">{service.icon}</div>
-                      <div className="text-sm font-medium">{service.label}</div>
-                    </button>
-                  ))}
-                </div>
-                {errors.serviceType && touched.serviceType && (
-                  <p className="text-red-500 text-sm mt-1">{errors.serviceType}</p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.fullName}
+                  onChange={(e) => updateFormData('fullName', e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                    errors.fullName && touched.fullName ? 'border-red-500' : ''
+                  }`}
+                  placeholder="Enter your full name"
+                  disabled={loading}
+                />
+                {errors.fullName && touched.fullName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
                 )}
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.phoneNumber}
+                  onChange={(e) => updateFormData('phoneNumber', e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                    errors.phoneNumber && touched.phoneNumber ? 'border-red-500' : ''
+                  }`}
+                  placeholder="+1 (555) 123-4567"
+                  disabled={loading}
+                />
+                {errors.phoneNumber && touched.phoneNumber && (
+                  <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => updateFormData('email', e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                    errors.email && touched.email ? 'border-red-500' : ''
+                  }`}
+                  placeholder="example@email.com"
+                  disabled={loading}
+                />
+                {errors.email && touched.email && (
+                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">New Password *</label>
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => updateFormData('password', e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                    errors.password && touched.password ? 'border-red-500' : ''
+                  }`}
+                  placeholder="Enter a secure password"
+                  disabled={loading}
+                />
+                {errors.password && touched.password && (
+                  <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
-                  <input
-                    type="text"
-                    value={formData.businessName}
-                    onChange={(e) => updateFormData('businessName', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
-                    placeholder="Optional business name"
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Service Information</h2>
+              <p className="text-gray-600">Tell us about your services</p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Service Type *</label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {serviceTypes.map((service) => (
+                  <button
+                    key={service.value}
+                    type="button"
+                    onClick={() => updateFormData('serviceType', service.value)}
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                      formData.serviceType === service.value
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     disabled={loading}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Hourly Rate ($) *</label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    value={formData.hourlyRate || ''}
-                    onChange={(e) => updateFormData('hourlyRate', parseInt(e.target.value) || 0)}
-                    className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
-                      errors.hourlyRate && touched.hourlyRate ? 'border-red-500' : ''
-                    }`}
-                    placeholder="75"
-                    disabled={loading}
-                  />
-                  {errors.hourlyRate && touched.hourlyRate && (
-                    <p className="text-red-500 text-sm mt-1">{errors.hourlyRate}</p>
-                  )}
-                </div>
+                  >
+                    <div className="text-2xl mb-2">{service.icon}</div>
+                    <div className="text-sm font-medium">{service.label}</div>
+                  </button>
+                ))}
+              </div>
+              {errors.serviceType && touched.serviceType && (
+                <p className="text-red-500 text-sm mt-2">{errors.serviceType}</p>
+              )}
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                <input
+                  type="text"
+                  value={formData.businessName}
+                  onChange={(e) => updateFormData('businessName', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                  placeholder="Optional business name"
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Hourly Rate ($) *</label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={formData.hourlyRate || ''}
+                  onChange={(e) => updateFormData('hourlyRate', parseInt(e.target.value) || 0)}
+                  className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+                    errors.hourlyRate && touched.hourlyRate ? 'border-red-500' : ''
+                  }`}
+                  placeholder="75"
+                  disabled={loading}
+                />
+                {errors.hourlyRate && touched.hourlyRate && (
+                  <p className="text-red-500 text-sm mt-1">{errors.hourlyRate}</p>
+                )}
               </div>
             </div>
 
-            {/* Location & Availability */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <MapPin className="h-5 w-5 mr-2 text-emerald-600" />
-                Location & Availability
-              </h3>
-              
-              <div className="mb-4">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Service Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => updateFormData('description', e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                  placeholder="Brief description of your services and specialties"
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
+                <input
+                  type="text"
+                  value={formData.experience}
+                  onChange={(e) => updateFormData('experience', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                  placeholder="5+ years"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MapPin className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Location & Availability</h2>
+              <p className="text-gray-600">Where and when do you provide services?</p>
+            </div>
+
+            <div className="space-y-6">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Service Address *</label>
                 <input
                   type="text"
@@ -414,7 +505,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                 )}
               </div>
 
-              <div className="mb-4">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Available Hours *</label>
                 <input
                   type="text"
@@ -453,52 +544,113 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
                 </button>
               </div>
             </div>
+          </div>
+        );
 
-            {/* Additional Information */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Service Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => updateFormData('description', e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
-                  placeholder="Brief description of your services and specialties"
-                  disabled={loading}
-                />
-              </div>
+      default:
+        return null;
+    }
+  };
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
-                <input
-                  type="text"
-                  value={formData.experience}
-                  onChange={(e) => updateFormData('experience', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
-                  placeholder="5+ years"
-                  disabled={loading}
-                />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={currentStep === 1 ? onBack : handlePrevious}
+            className="flex items-center text-emerald-600 hover:text-emerald-700 transition-colors"
+            disabled={loading}
+          >
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            {currentStep === 1 ? 'Back to Home' : 'Previous'}
+          </button>
+
+          <div className="text-sm text-gray-500">
+            Step {currentStep} of 3
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between">
+            {STEPS.map((step) => (
+              <div key={step.id} className="flex flex-col items-center flex-1">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
+                  currentStep >= step.id 
+                    ? 'bg-emerald-500 border-emerald-500 text-white' 
+                    : 'border-gray-300 text-gray-400'
+                }`}>
+                  {currentStep > step.id ? (
+                    <Check className="h-5 w-5" />
+                  ) : (
+                    <step.icon className="h-5 w-5" />
+                  )}
+                </div>
+                <span className={`text-xs mt-2 text-center ${
+                  currentStep >= step.id ? 'text-emerald-600' : 'text-gray-400'
+                }`}>
+                  {step.title}
+                </span>
               </div>
+            ))}
+          </div>
+          <div className="flex mt-4">
+            {STEPS.map((step, index) => (
+              <div key={step.id} className="flex-1">
+                <div className={`h-2 rounded-full transition-colors ${
+                  currentStep > step.id ? 'bg-emerald-500' : 'bg-gray-200'
+                }`} />
+                {index < STEPS.length - 1 && <div className="w-4" />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Form Content */}
+        <div className="bg-white rounded-3xl p-8 shadow-xl">
+          {renderStepContent()}
+
+          {/* Error Display */}
+          {error && (
+            <div className="mt-6 text-red-600 bg-red-50 rounded-xl p-4 text-center">
+              {error}
             </div>
+          )}
 
-            {/* Submit Button */}
-            {error && (
-              <div className="text-red-600 bg-red-50 rounded-xl p-4 text-center">
-                {error}
-              </div>
-            )}
+          {/* Navigation Buttons */}
+          <div className="mt-8 flex justify-between">
+            <div>
+              {currentStep > 1 && (
+                <button
+                  type="button"
+                  onClick={handlePrevious}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                  disabled={loading}
+                >
+                  Previous
+                </button>
+              )}
+            </div>
             <button
-              type="submit"
-              className={`w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-200 ${
-                (!isFormValid || loading) ? 'opacity-50 cursor-not-allowed' : ''
+              onClick={handleNext}
+              className={`px-8 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold flex items-center hover:shadow-lg transition-all duration-200 ${
+                (currentStep === 3 ? (!isFormValid || loading) : (!validateStep(currentStep) || loading)) ? 'opacity-50 cursor-not-allowed' : ''
               }`}
-              disabled={!isFormValid || loading}
+              disabled={currentStep === 3 ? (!isFormValid || loading) : (!validateStep(currentStep) || loading)}
             >
-              {loading ? 'Creating...' : 'Create Provider Profile'}
+              {loading ? (
+                'Creating...'
+              ) : currentStep === 3 ? (
+                'Create Provider Profile'
+              ) : (
+                <>
+                  Next
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </>
+              )}
             </button>
-          </form>
+          </div>
         </div>
       </div>
     </div>

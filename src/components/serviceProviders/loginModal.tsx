@@ -33,7 +33,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900">Provider Login</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Login</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"

@@ -29,15 +29,22 @@ export const ServiceInfoStep: React.FC<ServiceInfoStepProps> = ({
       </div>
 
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-3">Service Type *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-3">Service Types * (Select all that apply)</label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {SERVICE_TYPES.map((service) => (
             <button
               key={service.value}
               type="button"
-              onClick={() => updateFormData('serviceType', service.value)}
+              onClick={() => {
+                const currentTypes = formData.serviceTypes || [];
+                const isSelected = currentTypes.includes(service.value);
+                const newTypes = isSelected 
+                  ? currentTypes.filter(type => type !== service.value)
+                  : [...currentTypes, service.value];
+                updateFormData('serviceTypes', newTypes);
+              }}
               className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                formData.serviceType === service.value
+                (formData.serviceTypes || []).includes(service.value)
                   ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                   : 'border-gray-200 hover:border-gray-300 text-gray-700'
               } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -48,9 +55,16 @@ export const ServiceInfoStep: React.FC<ServiceInfoStepProps> = ({
             </button>
           ))}
         </div>
-        {errors.serviceType && touched.serviceType && (
-          <p className="text-red-500 text-sm mt-2">{errors.serviceType}</p>
+        {errors.serviceTypes && touched.serviceTypes && (
+          <p className="text-red-500 text-sm mt-2">{errors.serviceTypes}</p>
         )}
+        {/* {(formData.serviceTypes || []).length > 0 && (
+          <div className="mt-2 text-sm text-gray-600">
+            Selected: {(formData.serviceTypes || []).map(type => 
+              SERVICE_TYPES.find(s => s.value === type)?.label
+            ).join(', ')}
+          </div>
+        )} */}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

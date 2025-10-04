@@ -19,7 +19,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     phoneNumber: '',
     email: '',
     password: '',
-    serviceType: '',
+    serviceTypes: [],
     businessName: '',
     address: '',
     availableHours: '',
@@ -34,7 +34,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     phoneNumber: false,
     email: false,
     password: false,
-    serviceType: false,
+    serviceTypes: false,
     address: false,
     availableHours: false,
     hourlyRate: false,
@@ -60,7 +60,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
       phoneNumber: true,
       email: true,
       password: true,
-      serviceType: true,
+      serviceTypes: true,
       address: true,
       availableHours: true,
       hourlyRate: true,
@@ -102,7 +102,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     } else if (currentStep === 2) {
       setTouched(prev => ({
         ...prev,
-        serviceType: true,
+        serviceTypes: true,
         hourlyRate: true,
       }));
     } else if (currentStep === 3) {

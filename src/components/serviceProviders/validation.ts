@@ -33,8 +33,8 @@ export const validateForm = (
     newErrors.password = 'Password must be at least 8 characters';
   }
 
-  if (touched.serviceType && !formData.serviceType) {
-    newErrors.serviceType = 'Please select a service type';
+  if (touched.serviceTypes && formData.serviceTypes.length === 0) {
+    newErrors.serviceTypes = 'Please select at least one service type';
   }
 
   if (touched.address && !formData.address.trim()) {
@@ -68,7 +68,7 @@ export const validateForm = (
     /^\+?[\d\s()-]{10,14}$/.test(formData.phoneNumber) &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
     formData.password.trim().length >= 8 &&
-    formData.serviceType !== '' &&
+      formData.serviceTypes.length > 0 &&
     formData.address.trim().length >= 5 &&
     /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i.test(formData.availableHours) &&
     formData.hourlyRate > 0 &&
@@ -88,7 +88,7 @@ export const validateStep = (step: number, formData: ProviderForm): boolean => {
     );
   }
   if (step === 2) {
-    return formData.serviceType !== '' && formData.hourlyRate > 0 && formData.hourlyRate <= 1000;
+    return formData.serviceTypes.length > 0 && formData.hourlyRate > 0 && formData.hourlyRate <= 1000;
   }
   if (step === 3) {
     return (

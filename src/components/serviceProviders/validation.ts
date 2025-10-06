@@ -88,7 +88,7 @@ export const validateStep = (step: number, formData: ProviderForm): boolean => {
     );
   }
   if (step === 2) {
-    return formData.serviceTypes.length > 0 && formData.hourlyRate > 0 && formData.hourlyRate <= 1000;
+    return formData.serviceTypes.length > 0 && formData.businessName.trim() !== '' && formData.hourlyRate > 0 && formData.hourlyRate <= 1000;
   }
   if (step === 3) {
     return (
@@ -98,5 +98,7 @@ export const validateStep = (step: number, formData: ProviderForm): boolean => {
   }
   return false;
 };
+
+
 
 

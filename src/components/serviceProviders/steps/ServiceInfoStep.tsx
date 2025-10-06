@@ -69,30 +69,62 @@ export const ServiceInfoStep: React.FC<ServiceInfoStepProps> = ({
 
       <div className="grid md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Business Name *</label>
           <input
             type="text"
+            required
             value={formData.businessName}
             onChange={(e) => updateFormData('businessName', e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
-            placeholder="Optional business name"
+            className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+              errors.businessName && touched.businessName ? 'border-red-500' : ''
+            }`}
+            placeholder="Your business name"
             disabled={loading}
           />
+          {errors.businessName && touched.businessName && (
+            <p className="text-red-500 text-sm mt-1">{errors.businessName}</p>
+          )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Hourly Rate ($) *</label>
-          <input
-            type="number"
-            required
-            min="0"
-            value={formData.hourlyRate || ''}
-            onChange={(e) => updateFormData('hourlyRate', parseInt(e.target.value) || 0)}
-            className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
-              errors.hourlyRate && touched.hourlyRate ? 'border-red-500' : ''
-            }`}
-            placeholder="75"
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Hourly Rate (₹) *
+          </label>
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={() => updateFormData("hourlyRate", Math.max(100, (formData.hourlyRate || 150) - 50))}
+              className="px-4 py-3 border border-gray-200 rounded-l-xl bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-50"
+              disabled={loading || (formData.hourlyRate || 0) <= 100}
+            >
+              <span className="font-bold text-lg">-</span>
+            </button>
+            <input
+              type="text"
+              readOnly
+              value={`₹ ${formData.hourlyRate || "100"}`}
+              className={`w-full text-center font-semibold text-lg text-gray-800 px-4 py-3 border-t border-b border-gray-200 focus:outline-none transition-all duration-200 ${
+                errors.hourlyRate && touched.hourlyRate ? "border-red-500" : ""
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => updateFormData("hourlyRate", (formData.hourlyRate || 50) + 50)}
+              className="px-4 py-3 border border-gray-200 rounded-r-xl bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-50"
+              disabled={loading}
+            >
+              <span className="font-bold text-lg">+</span>
+            </button>
+          </div>
+          {/* <input
+            type="range"
+            min="100"
+            max="10000"
+            step="50"
+            value={formData.hourlyRate || 100}
+            onChange={(e) => updateFormData("hourlyRate", parseInt(e.target.value, 10))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-3 accent-emerald-600"
             disabled={loading}
-          />
+          /> */}
           {errors.hourlyRate && touched.hourlyRate && (
             <p className="text-red-500 text-sm mt-1">{errors.hourlyRate}</p>
           )}
@@ -112,7 +144,7 @@ export const ServiceInfoStep: React.FC<ServiceInfoStepProps> = ({
           />
         </div>
 
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
           <input
             type="text"
@@ -122,7 +154,7 @@ export const ServiceInfoStep: React.FC<ServiceInfoStepProps> = ({
             placeholder="5+ years"
             disabled={loading}
           />
-        </div>
+        </div> */}
       </div>
     </div>
   );

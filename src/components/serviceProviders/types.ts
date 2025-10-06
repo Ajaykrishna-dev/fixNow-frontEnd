@@ -25,6 +25,7 @@ export interface FormErrors {
   email?: string;
   password?: string;
   serviceTypes?: string;
+  businessName?: string;
   address?: string;
   availableHours?: string;
   hourlyRate?: string;
@@ -36,6 +37,7 @@ export interface TouchedFields {
   email: boolean;
   password: boolean;
   serviceTypes: boolean;
+  businessName: boolean;
   address: boolean;
   availableHours: boolean;
   hourlyRate: boolean;
@@ -46,5 +48,3 @@ export interface StepDefinition {
   title: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
-
-

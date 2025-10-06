@@ -9,6 +9,7 @@ export interface ProviderForm {
   phoneNumber: string;
   email: string;
   password: string;
+  confirmPassword?: string;
   serviceTypes: ServiceType[];
   businessName: string;
   address: string;
@@ -24,6 +25,7 @@ export interface FormErrors {
   phoneNumber?: string;
   email?: string;
   password?: string;
+  confirmPassword?: string;
   serviceTypes?: string;
   businessName?: string;
   address?: string;
@@ -36,6 +38,7 @@ export interface TouchedFields {
   phoneNumber: boolean;
   email: boolean;
   password: boolean;
+  confirmPassword?: boolean;
   serviceTypes: boolean;
   businessName: boolean;
   address: boolean;

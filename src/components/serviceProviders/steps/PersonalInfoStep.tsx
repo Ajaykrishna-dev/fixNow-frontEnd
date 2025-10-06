@@ -96,6 +96,23 @@ export const PersonalInfoStep: React.FC<PersonalInfoStepProps> = ({
             <p className="text-red-500 text-sm mt-1">{errors.password}</p>
           )}
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
+          <input
+            type="password"
+            required
+            value={formData.confirmPassword || ''}
+            onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+            className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
+              errors.confirmPassword && touched.confirmPassword ? 'border-red-500' : ''
+            }`}
+            placeholder="Confirm your password"
+            disabled={loading}
+          />
+          {errors.confirmPassword && touched.confirmPassword && (
+            <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+          )}
+        </div>
       </div>
     </div>
   );

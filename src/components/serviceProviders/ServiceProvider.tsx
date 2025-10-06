@@ -100,6 +100,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
         phoneNumber: true,
         email: true,
         password: true,
+        confirmPassword: true,
       }));
     } else if (currentStep === 2) {
       setTouched(prev => ({

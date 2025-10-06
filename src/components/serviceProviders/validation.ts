@@ -1,5 +1,25 @@
 import { FormErrors, ProviderForm, TouchedFields } from './types';
 
+const validatePassword = (password: string): string[] => {
+  const errors: string[] = [];
+  if (password.length < 8) {
+    errors.push('at least 8 characters');
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('a lowercase letter');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('an uppercase letter');
+  }
+  if (!/\d/.test(password)) {
+    errors.push('a number');
+  }
+  if (!/[!@#$%^&*]/.test(password)) {
+    errors.push('a special character');
+  }
+  return errors;
+};
+
 export const validateForm = (
   formData: ProviderForm,
   touched: TouchedFields,
@@ -27,14 +47,25 @@ export const validateForm = (
     newErrors.email = 'Enter a valid email address';
   }
 
-  if (touched.password && !formData.password.trim()) {
+  if (touched.password && !formData.password) {
     newErrors.password = 'Password is required';
-  } else if (touched.password && formData.password.length < 8) {
-    newErrors.password = 'Password must be at least 8 characters';
+  } else if (touched.password) {
+    const passwordErrors = validatePassword(formData.password);
+    if (passwordErrors.length > 0) {
+      newErrors.password = `Password must contain ${passwordErrors.join(', ')}`;
+    }
+  }
+
+  if (touched.confirmPassword && formData.password !== formData.confirmPassword) {
+    newErrors.confirmPassword = 'Passwords do not match';
   }
 
   if (touched.serviceTypes && formData.serviceTypes.length === 0) {
     newErrors.serviceTypes = 'Please select at least one service type';
+  }
+
+  if (touched.businessName && !formData.businessName.trim()) {
+    newErrors.businessName = 'Business name is required';
   }
 
   if (touched.address && !formData.address.trim()) {
@@ -54,8 +85,8 @@ export const validateForm = (
 
   if (touched.hourlyRate && formData.hourlyRate <= 0) {
     newErrors.hourlyRate = 'Hourly rate must be greater than 0';
-  } else if (touched.hourlyRate && formData.hourlyRate > 1000) {
-    newErrors.hourlyRate = 'Hourly rate cannot exceed 1000';
+  } else if (touched.hourlyRate && formData.hourlyRate > 10000) {
+    newErrors.hourlyRate = 'Hourly rate cannot exceed 10000';
   }
 
   if (setErrors) {
@@ -67,12 +98,14 @@ export const validateForm = (
     /^[a-zA-Z\s]+$/.test(formData.fullName) &&
     /^\+?[\d\s()-]{10,14}$/.test(formData.phoneNumber) &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
-    formData.password.trim().length >= 8 &&
-      formData.serviceTypes.length > 0 &&
+    validatePassword(formData.password).length === 0 &&
+    formData.password === formData.confirmPassword &&
+    formData.serviceTypes.length > 0 &&
+    formData.businessName.trim() !== '' &&
     formData.address.trim().length >= 5 &&
     /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i.test(formData.availableHours) &&
     formData.hourlyRate > 0 &&
-    formData.hourlyRate <= 1000;
+    formData.hourlyRate <= 10000;
 
   return isValid;
 };
@@ -84,11 +117,12 @@ export const validateStep = (step: number, formData: ProviderForm): boolean => {
       /^[a-zA-Z\s]+$/.test(formData.fullName) &&
       /^\+?[\d\s()-]{10,14}$/.test(formData.phoneNumber) &&
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
-      formData.password.trim().length >= 8
+      validatePassword(formData.password).length === 0 &&
+      formData.password === formData.confirmPassword
     );
   }
   if (step === 2) {
-    return formData.serviceTypes.length > 0 && formData.businessName.trim() !== '' && formData.hourlyRate > 0 && formData.hourlyRate <= 1000;
+    return formData.serviceTypes.length > 0 && formData.businessName.trim() !== '' && formData.hourlyRate > 0 && formData.hourlyRate <= 10000;
   }
   if (step === 3) {
     return (
@@ -98,7 +132,3 @@ export const validateStep = (step: number, formData: ProviderForm): boolean => {
   }
   return false;
 };
-
-
-
-

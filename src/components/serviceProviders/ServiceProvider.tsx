@@ -19,6 +19,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     phoneNumber: '',
     email: '',
     password: '',
+    confirmPassword: '',
     serviceTypes: [],
     businessName: '',
     address: '',
@@ -34,6 +35,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     phoneNumber: false,
     email: false,
     password: false,
+    confirmPassword: false,
     serviceTypes: false,
     businessName: false,
     address: false,
@@ -61,8 +63,9 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
       phoneNumber: true,
       email: true,
       password: true,
+      confirmPassword: true,
       serviceTypes: true,
-      businessName: false,
+      businessName: true,
       address: true,
       availableHours: true,
       hourlyRate: true,
@@ -73,7 +76,8 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     setLoading(true);
     setError(null);
     try {
-      await createProvider(formData);
+      const dataToSubmit = { ...formData, role: 'service_providers' };
+      await createProvider(dataToSubmit);
       setStep('success');
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
@@ -106,6 +110,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
       setTouched(prev => ({
         ...prev,
         serviceTypes: true,
+        businessName: true,
         hourlyRate: true,
       }));
     } else if (currentStep === 3) {

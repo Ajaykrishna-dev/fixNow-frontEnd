@@ -23,6 +23,8 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     serviceTypes: [],
     businessName: '',
     address: '',
+    latitude: 0,
+    longitude: 0,
     availableHours: '',
     emergencySupport: false,
     hourlyRate: 0,

@@ -13,6 +13,8 @@ export interface ProviderForm {
   serviceTypes: ServiceType[];
   businessName: string;
   address: string;
+  latitude: number;
+  longitude: number;
   availableHours: string;
   emergencySupport: boolean;
   hourlyRate: number;

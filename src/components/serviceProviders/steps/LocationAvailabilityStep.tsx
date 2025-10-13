@@ -1,6 +1,22 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Crosshair } from 'lucide-react';
 import { FormErrors, ProviderForm, TouchedFields } from '../types';
+// Map
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix default Leaflet marker icons under bundlers (Vite)
+// Only run in browser
+if (typeof window !== 'undefined') {
+  // @ts-ignore - accessing private property to reset
+  delete (L.Icon.Default as any).prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).toString(),
+    iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).toString(),
+    shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).toString(),
+  });
+}
 
 interface LocationAvailabilityStepProps {
   formData: ProviderForm;
@@ -17,6 +33,9 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
   loading,
   updateFormData,
 }) => {
+  const [isLocating, setIsLocating] = React.useState(false);
+  const [isReverseGeocoding, setIsReverseGeocoding] = React.useState(false);
+
   const timeSlots = React.useMemo(() => {
     const slots = [];
     for (let i = 0; i < 24; i++) {
@@ -44,6 +63,74 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
     return ['8:00 AM', '6:00 PM']; // Default values
   }, [formData.availableHours]);
 
+  // Reverse geocode helper (OpenStreetMap Nominatim)
+  const reverseGeocode = React.useCallback(async (lat: number, lng: number) => {
+    try {
+      setIsReverseGeocoding(true);
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!res.ok) throw new Error('reverse geocode failed');
+      const data = await res.json();
+      const human = (data && (data.display_name as string)) || '';
+      if (human) {
+        updateFormData('address', human);
+      } else {
+        updateFormData('address', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      }
+    } catch (_) {
+      // Fallback to raw coordinates when reverse geocoding fails
+      updateFormData('address', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    } finally {
+      setIsReverseGeocoding(false);
+    }
+  }, [updateFormData]);
+
+  const handleSetPosition = React.useCallback((lat: number, lng: number, shouldReverse = true) => {
+    updateFormData('latitude' as keyof ProviderForm, lat);
+    updateFormData('longitude' as keyof ProviderForm, lng);
+    if (shouldReverse) reverseGeocode(lat, lng);
+  }, [reverseGeocode, updateFormData]);
+
+  const getCurrentLocation = () => {
+    if (!('geolocation' in navigator)) return;
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        // Immediately populate address with coordinates, then reverse geocode to refine
+        handleSetPosition(latitude, longitude, false);
+        updateFormData('address', `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        reverseGeocode(latitude, longitude);
+        setIsLocating(false);
+      },
+      () => {
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  // Map click handler component
+  const ClickHandler: React.FC = () => {
+    useMapEvents({
+      click: (e) => {
+        handleSetPosition(e.latlng.lat, e.latlng.lng, true);
+      },
+    });
+    return null;
+  };
+
+  const hasPosition = Boolean(formData.latitude && formData.longitude);
+  const keralaCenter: [number, number] = [10.8505, 76.2711]; // Kerala centroid approx
+  const centerPosition: [number, number] = React.useMemo(() => {
+    if (hasPosition) return [formData.latitude, formData.longitude];
+    // Default center (Kerala)
+    return keralaCenter;
+  }, [hasPosition, formData.latitude, formData.longitude]);
+  const zoomLevel = hasPosition ? 13 : 8;
+
   const handleStartTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStartTime = e.target.value;
     updateFormData('availableHours', `${newStartTime} - ${endTime}`);
@@ -65,6 +152,42 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
       </div>
 
       <div className="space-y-6">
+        {/* Map + Controls */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700">Pick Location on Map</label>
+            <button
+              type="button"
+              onClick={getCurrentLocation}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm ${isLocating ? 'opacity-60 cursor-not-allowed' : ''}`}
+              disabled={loading || isLocating}
+              title="Use current location"
+            >
+              <Crosshair className="h-4 w-4" />
+              {isLocating ? 'Locating...' : 'Use current location'}
+            </button>
+          </div>
+          <div className="rounded-xl overflow-hidden border border-gray-200">
+            <MapContainer center={centerPosition} zoom={zoomLevel} style={{ height: 320, width: '100%' }} scrollWheelZoom>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <ClickHandler />
+              {formData.latitude && formData.longitude ? (
+                <Marker position={[formData.latitude, formData.longitude]} />
+              ) : null}
+            </MapContainer>
+          </div>
+          <div className="mt-2 text-sm text-gray-600">
+            {formData.latitude && formData.longitude ? (
+              <span>Lat: {formData.latitude.toFixed(6)}, Lng: {formData.longitude.toFixed(6)} {isReverseGeocoding ? '(resolving address...)' : ''}</span>
+            ) : (
+              <span>Click on the map or use your current location.</span>
+            )}
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Service Address *</label>
           <input

@@ -24,7 +24,7 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loggedInProvider, setLoggedInProvider] = useState<typeof mockProviderData | null>(null);
 
-  const handleSelectMode = (mode: 'seeker' | 'provider') => {
+  const handleSelectMode = (mode: 'seeker' | 'provider' | 'landing') => {
     setCurrentView(mode);
   };
 

@@ -5,6 +5,8 @@ import { FormErrors, ProviderForm, TouchedFields } from '../types';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { reverseGeocode as reverseGeocodeService } from '../../../services/providerServices';
+import { getCurrentPositionWithAddress } from '../../../services/location';
 
 // Fix default Leaflet marker icons under bundlers (Vite)
 // Only run in browser
@@ -63,28 +65,12 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
     return ['8:00 AM', '6:00 PM']; // Default values
   }, [formData.availableHours]);
 
-  // Reverse geocode helper (OpenStreetMap Nominatim)
+  // Reverse geocode via service
   const reverseGeocode = React.useCallback(async (lat: number, lng: number) => {
-    try {
-      setIsReverseGeocoding(true);
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/json' },
-      });
-      if (!res.ok) throw new Error('reverse geocode failed');
-      const data = await res.json();
-      const human = (data && (data.display_name as string)) || '';
-      if (human) {
-        updateFormData('address', human);
-      } else {
-        updateFormData('address', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-      }
-    } catch (_) {
-      // Fallback to raw coordinates when reverse geocoding fails
-      updateFormData('address', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-    } finally {
-      setIsReverseGeocoding(false);
-    }
+    setIsReverseGeocoding(true);
+    const addr = await reverseGeocodeService(lat, lng);
+    updateFormData('address', addr);
+    setIsReverseGeocoding(false);
   }, [updateFormData]);
 
   const handleSetPosition = React.useCallback((lat: number, lng: number, shouldReverse = true) => {
@@ -93,23 +79,17 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
     if (shouldReverse) reverseGeocode(lat, lng);
   }, [reverseGeocode, updateFormData]);
 
-  const getCurrentLocation = () => {
-    if (!('geolocation' in navigator)) return;
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        // Immediately populate address with coordinates, then reverse geocode to refine
-        handleSetPosition(latitude, longitude, false);
-        updateFormData('address', `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-        reverseGeocode(latitude, longitude);
-        setIsLocating(false);
-      },
-      () => {
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+  const getCurrentLocation = async () => {
+    try {
+      setIsLocating(true);
+      const { latitude, longitude, address } = await getCurrentPositionWithAddress();
+      handleSetPosition(latitude, longitude, false);
+      updateFormData('address', address);
+    } catch (_) {
+      // ignore
+    } finally {
+      setIsLocating(false);
+    }
   };
 
   // Map click handler component
@@ -179,13 +159,13 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
               ) : null}
             </MapContainer>
           </div>
-          <div className="mt-2 text-sm text-gray-600">
+          {/* <div className="mt-2 text-sm text-gray-600">
             {formData.latitude && formData.longitude ? (
               <span>Lat: {formData.latitude.toFixed(6)}, Lng: {formData.longitude.toFixed(6)} {isReverseGeocoding ? '(resolving address...)' : ''}</span>
             ) : (
               <span>Click on the map or use your current location.</span>
             )}
-          </div>
+          </div> */}
         </div>
 
         <div>

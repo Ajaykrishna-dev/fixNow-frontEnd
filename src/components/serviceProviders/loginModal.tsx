@@ -4,7 +4,7 @@ import { X, User, Lock, Eye, EyeOff } from 'lucide-react';
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (credentials: { email: string; password: string }) => void;
+  onLogin: (credentials: { email: string; password: string; role?: 'service_seeker' | 'service_providers' }) => void;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => {
@@ -12,6 +12,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [role, setRole] = useState<'service_seeker' | 'service_providers'>('service_seeker');
 
   if (!isOpen) return null;
 
@@ -21,7 +22,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
     
     // Simulate API call
     setTimeout(() => {
-      onLogin({ email, password });
+      onLogin({ email, password, role });
       setIsLoading(false);
       setEmail('');
       setPassword('');
@@ -44,6 +45,30 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Role Selector */}
+          <div>
+            <span className="block text-sm font-medium text-gray-700 mb-2">I am a</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole('service_seeker')}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  role === 'service_seeker' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Service Seeker
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('service_providers')}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  role === 'service_providers' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Service Provider
+              </button>
+            </div>
+          </div>
           {/* Email Field */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">

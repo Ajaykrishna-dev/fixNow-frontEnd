@@ -78,6 +78,7 @@ export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
     setLoading(true);
     setError(null);
     try {
+      console.log(formData);
       const dataToSubmit = { ...formData, role: 'service_providers' };
       await createProvider(dataToSubmit);
       setStep('success');

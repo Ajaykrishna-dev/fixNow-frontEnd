@@ -67,20 +67,23 @@ export const SearchView: React.FC<SearchViewProps> = ({
               What service do you need?
             </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {serviceTypes.map((service) => (
-                <button
-                  key={service.value}
-                  onClick={() => setServiceType(service.value)}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                    searchRequest.serviceType === service.value
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                  }`}
-                >
-                  <div className="text-2xl mb-2">{service.icon}</div>
-                  <div className="font-medium">{service.label}</div>
-                </button>
-              ))}
+              {serviceTypes.map((service) => {
+                const isSelected = searchRequest.serviceTypes.includes(service.value);
+                return (
+                  <button
+                    key={service.value}
+                    onClick={() => setServiceType(service.value)}
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                      isSelected
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">{service.icon}</div>
+                    <div className="font-medium">{service.label}</div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -145,7 +148,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
 
           <button
             onClick={onSearch}
-            disabled={!searchRequest.serviceType}
+            disabled={searchRequest.serviceTypes.length === 0}
             className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Find Service Providers

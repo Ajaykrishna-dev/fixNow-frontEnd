@@ -64,7 +64,7 @@ const mockProviders: ServiceProvider[] = [
 export const ServiceSeeker: React.FC<ServiceSeekerProps> = ({ onBack }) => {
   const [step, setStep] = useState<'search' | 'results'>('search');
   const [searchRequest, setSearchRequest] = useState<ServiceRequest>({
-    serviceType: '',
+    serviceTypes: [],
     radius: 5,
     isEmergency: false,
     location: { latitude: 0, longitude: 0 },
@@ -73,7 +73,7 @@ export const ServiceSeeker: React.FC<ServiceSeekerProps> = ({ onBack }) => {
 
   const handleSearch = () => {
     const filteredProviders = mockProviders.filter(provider =>
-      provider.serviceType === searchRequest.serviceType &&
+      searchRequest.serviceTypes.includes(provider.serviceType as any) &&
       (!searchRequest.isEmergency || provider.emergencySupport) &&
       provider.isAvailable
     );
@@ -112,7 +112,15 @@ export const ServiceSeeker: React.FC<ServiceSeekerProps> = ({ onBack }) => {
         <SearchView
           onBack={onBack}
           searchRequest={searchRequest}
-          setServiceType={(type) => setSearchRequest(prev => ({ ...prev, serviceType: type }))}
+          setServiceType={(type) => setSearchRequest(prev => {
+            const exists = prev.serviceTypes.includes(type);
+            return {
+              ...prev,
+              serviceTypes: exists
+                ? prev.serviceTypes.filter(t => t !== type)
+                : [...prev.serviceTypes, type]
+            };
+          })}
           setRadius={(km) => setSearchRequest(prev => ({ ...prev, radius: km }))}
           toggleEmergency={() => setSearchRequest(prev => ({ ...prev, isEmergency: !prev.isEmergency }))}
           useCurrentLocation={getCurrentLocation}

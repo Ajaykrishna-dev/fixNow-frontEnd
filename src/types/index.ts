@@ -18,7 +18,7 @@ export interface ServiceProvider {
 }
 
 export interface ServiceRequest {
-  serviceType: string;
+  serviceTypes: string[];
   radius: number;
   isEmergency: boolean;
   location: {

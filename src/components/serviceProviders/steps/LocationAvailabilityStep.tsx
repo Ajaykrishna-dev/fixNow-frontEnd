@@ -2,11 +2,10 @@ import React from 'react';
 import { MapPin, Crosshair } from 'lucide-react';
 import { FormErrors, ProviderForm, TouchedFields } from '../types';
 // Map
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { reverseGeocode as reverseGeocodeService } from '../../../services/providerServices';
-import { getCurrentPositionWithAddress } from '../../../services/location';
 
 // Fix default Leaflet marker icons under bundlers (Vite)
 // Only run in browser
@@ -37,6 +36,7 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
 }) => {
   const [isLocating, setIsLocating] = React.useState(false);
   const [isReverseGeocoding, setIsReverseGeocoding] = React.useState(false);
+  const [map, setMap] = React.useState<L.Map | null>(null);
 
   const timeSlots = React.useMemo(() => {
     const slots = [];
@@ -80,24 +80,34 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
   }, [reverseGeocode, updateFormData]);
 
   const getCurrentLocation = async () => {
-    try {
+    if (map) {
       setIsLocating(true);
-      const { latitude, longitude, address } = await getCurrentPositionWithAddress();
-      handleSetPosition(latitude, longitude, false);
-      updateFormData('address', address);
-    } catch (_) {
-      // ignore
-    } finally {
-      setIsLocating(false);
+      map.locate();
     }
   };
 
   // Map click handler component
   const ClickHandler: React.FC = () => {
+    const map = useMap();
+    React.useEffect(() => {
+      if (map) {
+        setMap(map);
+      }
+    }, [map]);
+
     useMapEvents({
       click: (e) => {
         handleSetPosition(e.latlng.lat, e.latlng.lng, true);
       },
+      locationfound: (e) => {
+        handleSetPosition(e.latlng.lat, e.latlng.lng, true);
+        map.flyTo(e.latlng, 13);
+        setIsLocating(false);
+      },
+      locationerror: () => {
+        setIsLocating(false);
+        // You might want to show an error to the user here
+      }
     });
     return null;
   };

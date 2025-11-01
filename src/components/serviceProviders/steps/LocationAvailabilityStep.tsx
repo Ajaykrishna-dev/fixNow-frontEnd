@@ -3,7 +3,7 @@ import { MapPin, Crosshair } from 'lucide-react';
 import { FormErrors, ProviderForm, TouchedFields } from '../types';
 // Map
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import L, { LeafletMouseEvent, LocationEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { reverseGeocode as reverseGeocodeService } from '../../../services/providerServices';
 
@@ -36,6 +36,7 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
 }) => {
   const [isLocating, setIsLocating] = React.useState(false);
   const [isReverseGeocoding, setIsReverseGeocoding] = React.useState(false);
+  const [locationError, setLocationError] = React.useState<string | null>(null);
   const [map, setMap] = React.useState<L.Map | null>(null);
 
   const timeSlots = React.useMemo(() => {
@@ -76,6 +77,7 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
   const handleSetPosition = React.useCallback((lat: number, lng: number, shouldReverse = true) => {
     updateFormData('latitude' as keyof ProviderForm, lat);
     updateFormData('longitude' as keyof ProviderForm, lng);
+    setLocationError(null); // Clear any previous location errors
     if (shouldReverse) reverseGeocode(lat, lng);
   }, [reverseGeocode, updateFormData]);
 
@@ -96,17 +98,17 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
     }, [map]);
 
     useMapEvents({
-      click: (e) => {
+      click: (e: LeafletMouseEvent) => {
         handleSetPosition(e.latlng.lat, e.latlng.lng, true);
       },
-      locationfound: (e) => {
+      locationfound: (e: LocationEvent) => {
         handleSetPosition(e.latlng.lat, e.latlng.lng, true);
         map.flyTo(e.latlng, 13);
         setIsLocating(false);
       },
       locationerror: () => {
         setIsLocating(false);
-        // You might want to show an error to the user here
+        setLocationError('Unable to determine your location. Please click on the map to select your location.');
       }
     });
     return null;
@@ -169,13 +171,18 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
               ) : null}
             </MapContainer>
           </div>
-          {/* <div className="mt-2 text-sm text-gray-600">
+          {locationError && (
+            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{locationError}</p>
+            </div>
+          )}
+          <div className="mt-2 text-sm text-gray-600">
             {formData.latitude && formData.longitude ? (
-              <span>Lat: {formData.latitude.toFixed(6)}, Lng: {formData.longitude.toFixed(6)} {isReverseGeocoding ? '(resolving address...)' : ''}</span>
+              <span>Lat: {formData.latitude.toFixed(6)}, Lng: {formData.longitude.toFixed(6)}</span>
             ) : (
               <span>Click on the map or use your current location.</span>
             )}
-          </div> */}
+          </div>
         </div>
 
         <div>
@@ -188,9 +195,12 @@ export const LocationAvailabilityStep: React.FC<LocationAvailabilityStepProps> =
             className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 ${
               errors.address && touched.address ? 'border-red-500' : ''
             }`}
-            placeholder="123 Main St, City, State"
+            placeholder={isReverseGeocoding ? 'Resolving address...' : '123 Main St, City, State'}
             disabled={loading}
           />
+          {isReverseGeocoding && (
+            <p className="text-blue-600 text-sm mt-1">Resolving address...</p>
+          )}
           {errors.address && touched.address && (
             <p className="text-red-500 text-sm mt-1">{errors.address}</p>
           )}

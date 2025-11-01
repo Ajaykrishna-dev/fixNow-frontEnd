@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect }from 'react';
 import { useState } from 'react';
 import { LandingPage } from './components/home/LandingPage';
 import { LoginModal } from './components/serviceProviders/loginModal';
@@ -20,9 +20,16 @@ const mockProviderData = {
 };
 
 function App() {
-  const [currentView, setCurrentView] = useState<'landing' | 'seeker' | 'provider' | 'dashboard'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'seeker' | 'provider' | 'dashboard'>(() => {
+    const savedView = sessionStorage.getItem('currentView');
+    return savedView ? JSON.parse(savedView) : 'landing';
+  });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loggedInProvider, setLoggedInProvider] = useState<typeof mockProviderData | null>(null);
+
+  useEffect(() => {
+    sessionStorage.setItem('currentView', JSON.stringify(currentView));
+  }, [currentView]);
 
   const handleSelectMode = (mode: 'seeker' | 'provider' | 'landing') => {
     setCurrentView(mode);

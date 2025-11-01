@@ -12,25 +12,39 @@ import { SuccessState } from './SuccessState';
 // Types, constants, and steps are imported from local modules
 
 export const ServiceProvider: React.FC<ServiceProviderProps> = ({ onBack }) => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [step, setStep] = useState<'form' | 'success'>('form');
-  const [formData, setFormData] = useState<ProviderForm>({
-    fullName: '',
-    phoneNumber: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    serviceTypes: [],
-    businessName: '',
-    address: '',
-    latitude: 0,
-    longitude: 0,
-    availableHours: '',
-    emergencySupport: false,
-    hourlyRate: 0,
-    description: '',
-    experience: '',
+  const [currentStep, setCurrentStep] = useState(() => {
+    const savedStep = sessionStorage.getItem('currentStep');
+    return savedStep ? JSON.parse(savedStep) : 1;
   });
+  const [step, setStep] = useState<'form' | 'success'>('form');
+  const [formData, setFormData] = useState<ProviderForm>(() => {
+    const savedFormData = sessionStorage.getItem('formData');
+    return savedFormData ? JSON.parse(savedFormData) : {
+      fullName: '',
+      phoneNumber: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      serviceTypes: [],
+      businessName: '',
+      address: '',
+      latitude: 0,
+      longitude: 0,
+      availableHours: '',
+      emergencySupport: false,
+      hourlyRate: 0,
+      description: '',
+      experience: '',
+    };
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('currentStep', JSON.stringify(currentStep));
+  }, [currentStep]);
+
+  useEffect(() => {
+    sessionStorage.setItem('formData', JSON.stringify(formData));
+  }, [formData]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({
     fullName: false,

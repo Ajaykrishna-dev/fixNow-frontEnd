@@ -10,3 +10,4 @@ export const serviceTypes: { value: ServiceType; label: string; icon: string }[]
   { value: 'cleaning', label: 'Cleaning', icon: '🧹' },
   { value: 'gardening', label: 'Gardening', icon: '🌱' },
 ];
+

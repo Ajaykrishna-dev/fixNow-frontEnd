@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { X, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { X, User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { login } from '../../services/providerServices';
+import { authService } from '../../services/auth';
+import { LoginResponse } from '../../types';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (credentials: { email: string; password: string; role?: 'service_seeker' | 'service_providers' }) => void;
+  onLogin: (loginResponse: LoginResponse) => void;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => {
@@ -13,20 +16,39 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [role, setRole] = useState<'service_seeker' | 'service_providers'>('service_seeker');
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      onLogin({ email, password, role });
-      setIsLoading(false);
+    try {
+      const loginResponse = await login(email, password, role);
+      
+      // Store authentication data
+      authService.setAuth(loginResponse);
+      
+      // Call parent callback with login response
+      onLogin(loginResponse);
+      
+      // Reset form
       setEmail('');
       setPassword('');
-    }, 1000);
+      setError(null);
+      onClose();
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.message 
+        || error.response?.data?.error 
+        || error.message 
+        || 'Login failed. Please check your credentials and try again.';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -45,6 +67,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
           {/* Role Selector */}
           <div>
             <span className="block text-sm font-medium text-gray-700 mb-2">I am a</span>

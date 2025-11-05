@@ -1,10 +1,33 @@
-import axios from "axios";
+import axiosInstance from "../api/axiosConfig.ts";
 import API_BASE_URL from "../api/apiConfig.ts";
+import { LoginResponse } from "../types/index.ts";
+import axios from "axios";
 
 // Handles all API logic (no UI here)
+
+// Authentication endpoint (use plain axios, not interceptor instance, to avoid circular dependency)
+export const login = async (
+  email: string, 
+  password: string, 
+  role: 'service_seeker' | 'service_providers'
+): Promise<LoginResponse> => {
+  try {
+    const response = await axios.post<LoginResponse>(`${API_BASE_URL}/auth/login`, {
+      email,
+      password,
+      role
+    });
+    return response.data;
+  } catch (error) {
+    console.error("API error:", error);
+    throw error; // Let UI layer handle it
+  }
+};
+
 export const createProvider = async (providerData: any) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/providers/`, providerData);
+    // Use axiosInstance which has interceptors for authenticated requests
+    const response = await axiosInstance.post(`${API_BASE_URL}/providers/`, providerData);
     return response.data;
   } catch (error) {
     console.error("API error:", error);
@@ -13,7 +36,8 @@ export const createProvider = async (providerData: any) => {
 };
 
 export const getAllProviders = async () => {
-  const response = await axios.get(`${API_BASE_URL}/providers/`);
+  // Use axiosInstance which has interceptors for authenticated requests
+  const response = await axiosInstance.get(`${API_BASE_URL}/providers/`);
   return response.data;
 }; 
 

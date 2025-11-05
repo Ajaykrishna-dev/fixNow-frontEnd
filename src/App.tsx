@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { LandingPage } from './components/home/LandingPage';
 import { LoginModal } from './components/serviceProviders/loginModal';
 import { ProviderDashboard } from './components/serviceProviders/providerDashboard';
+import { authService } from './services/auth';
+import { LoginResponse, User } from './types';
 
 // Mock provider data - in a real app, this would come from an API
 const mockProviderData = {
@@ -26,6 +28,26 @@ function App() {
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loggedInProvider, setLoggedInProvider] = useState<typeof mockProviderData | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
+
+  // Check authentication state on mount
+  useEffect(() => {
+    const authState = authService.getAuthState();
+    if (authState.isAuthenticated && authState.user) {
+      setAuthenticatedUser(authState.user);
+      
+      // Navigate to dashboard based on user role
+      if (authState.user.role === 'service_providers') {
+        setCurrentView('dashboard');
+        // In a real app, you would fetch provider data from API
+        // For now, using mock data
+        setLoggedInProvider(mockProviderData);
+      } else if (authState.user.role === 'service_seeker') {
+        // Navigate to seeker view
+        setCurrentView('seeker');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     sessionStorage.setItem('currentView', JSON.stringify(currentView));
@@ -39,23 +61,33 @@ function App() {
     setShowLoginModal(true);
   };
 
-  const handleLogin = (credentials: { email: string; password: string }) => {
-    // In a real app, you would validate credentials with an API
-    if (credentials.email === 'john@example.com' && credentials.password === 'password123') {
-      setLoggedInProvider(mockProviderData);
+  const handleLogin = (loginResponse: LoginResponse) => {
+    // Auth data is already stored by LoginModal component
+    setAuthenticatedUser(loginResponse.user);
+    
+    // Navigate based on user role
+    if (loginResponse.user.role === 'service_providers') {
       setCurrentView('dashboard');
-      setShowLoginModal(false);
-    } else {
-      alert('Invalid credentials. Please use the demo credentials provided.');
+      // In a real app, fetch provider data from API using the user ID
+      // For now, using mock data
+      setLoggedInProvider(mockProviderData);
+    } else if (loginResponse.user.role === 'service_seeker') {
+      setCurrentView('seeker');
     }
+    
+    setShowLoginModal(false);
   };
 
   const handleLogout = () => {
+    // Clear authentication data
+    authService.clearAuth();
+    setAuthenticatedUser(null);
     setLoggedInProvider(null);
     setCurrentView('landing');
   };
 
-  if (currentView === 'dashboard' && loggedInProvider) {
+  // Show dashboard if authenticated as service provider
+  if (currentView === 'dashboard' && loggedInProvider && authenticatedUser?.role === 'service_providers') {
     return <ProviderDashboard provider={loggedInProvider} onLogout={handleLogout} />;
   }
 

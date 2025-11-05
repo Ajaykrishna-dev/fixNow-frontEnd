@@ -38,3 +38,25 @@ export type ServiceType =
   | 'gardening';
 
 export type AvailabilityStatus = 'available' | 'busy' | 'offline';
+
+// Authentication types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'service_seeker' | 'service_providers';
+}
+
+export interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: User;
+}
+
+export interface AuthState {
+  user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  isAuthenticated: boolean;
+}
